@@ -42,10 +42,12 @@ Resources:
                 Owner: CUSTOM_LAMBDA
                 SourceDetails:
                     - EventSource: aws.config
-                        MessageType: ConfigurationItemChangeNotification
+                      MessageType: ConfigurationItemChangeNotification
                 SourceIdentifier: !ImportValue opa-lambda-arn
 
 Outputs:
     ConfigRuleName:
         Description: Name of the Config rule deployed
         Value: !Ref OpaConfigRule
+
+
