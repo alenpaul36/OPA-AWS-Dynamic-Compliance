@@ -51,6 +51,7 @@ class Opa(object):
         except Exception as e:
             logger.error(e)
             raise
+        return False
 
 
 class Config(object):
@@ -75,7 +76,8 @@ class Config(object):
             'Annotation': 'Setting compliance based on OPA policy evaluation.\n',
             'ComplianceResourceType': self.config_item['resourceType'],
             'ComplianceResourceId': self.config_item['resourceId'],
-            'OrderingTimestamp': self.config_item['configurationItemCaptureTime']
+            'OrderingTimestamp': self.config_item['configurationItemCaptureTime'],
+            'ComplianceType': 'COMPLIANT' if compliance else 'NON_COMPLIANT'
         }
         if self.resource_status == 'ResourceDeleted':
             evaluation['ComplianceType'] = 'NOT_APPLICABLE'
@@ -84,12 +86,10 @@ class Config(object):
             logger.info(msg)
             evaluation['Annotation'] += msg
         elif compliance:
-            evaluation['ComplianceType'] = 'COMPLIANT'
             msg = 'Resource {} is compliant'.format(self.resource_id)
             logger.info(msg)
             evaluation['Annotation'] += msg
         else:
-            evaluation['ComplianceType'] = 'NON_COMPLIANT'
             msg = 'Resource {} is NOT compliant'.format(self.resource_id)
             logger.info(msg)
             evaluation['Annotation'] += msg
@@ -152,37 +152,31 @@ def get_tempfile(content):
 
 
 def lambda_handler(event, context):
-    try:
-        logger.debug('Lambda event: {}'.format(event))
-        config = Config(event)
-        logger.info('Config input processed')
+    logger.debug('Lambda event: {}'.format(event))
+    config = Config(event)
+    logger.info('Config input processed')
 
-        input_file = get_tempfile(json.dumps(config.config_item))
-        logger.info('OPA input file created')
-        logger.debug('Name of the input file is: {}'.format(input_file.name))
+    input_file = get_tempfile(json.dumps(config.config_item))
+    logger.info('OPA input file created')
+    logger.debug('Name of the input file is: {}'.format(input_file.name))
 
-        policy_file = get_tempfile(download_s3_obj(
-            config.input_parameters['ASSETS_BUCKET'],
-            config.input_parameters['REGO_POLICIES_PREFIX'],
-            config.input_parameters['REGO_POLICY_KEY']
-        ))
-        logger.info('OPA policy file created')
-        logger.debug('Name of the policy file is: {}'.format(policy_file.name))
+    policy_file = get_tempfile(download_s3_obj(
+        config.input_parameters['ASSETS_BUCKET'],
+        config.input_parameters['REGO_POLICIES_PREFIX'],
+        config.input_parameters['REGO_POLICY_KEY']
+    ))
+    logger.info('OPA policy file created')
+    logger.debug('Name of the policy file is: {}'.format(policy_file.name))
 
-        opa = Opa(
-            input_file.name,
-            config.input_parameters['OPA_POLICY_PACKAGE_NAME'],
-            config.input_parameters['OPA_POLICY_RULE_TO_EVAL']
-        )
+    opa = Opa(
+        input_file.name,
+        config.input_parameters['OPA_POLICY_PACKAGE_NAME'],
+        config.input_parameters['OPA_POLICY_RULE_TO_EVAL']
+    )
 
-        config.set_compliance(opa.eval_compliance(policy_file.name))
-    finally:
-        try:
-            input_file.close()
-            policy_file.close()
-        except UnboundLocalError as e:
-            logger.error(
-                'Tempfiles not created. Nothing to close. Error: {}'.format(e)
-            )
-        else:
-            logger.info("Temp files have been closed")
+    compliance = opa.eval_compliance(policy_file.name)
+    config.set_compliance(compliance)
+
+    input_file.close()
+    policy_file.close()
+    logger.info("Temp files have been closed")
