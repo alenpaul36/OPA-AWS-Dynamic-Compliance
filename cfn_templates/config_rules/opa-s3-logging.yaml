@@ -49,3 +49,4 @@ Outputs:
     ConfigRuleName:
         Description: Name of the Config rule deployed
         Value: !Ref OpaConfigRule
+
