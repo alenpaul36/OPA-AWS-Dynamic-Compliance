@@ -2,51 +2,50 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Custom Config rule based on OPA policy to evaluate S3 bucket logging
 
 Parameters:
-    AssetsBucket:
-        Description: S3 bucket name where the OPA policy is stored
-        Type: String
-    ConfigRuleScope:
-        Description: Scope of the Config rule. Comma delimited list of AWS resource types
-        Type: CommaDelimitedList
-        Default: AWS::S3::Bucket
-    OpaPoliciesS3Prefix:
-        Description: S3 key prefix where rego policies are stored. (e.g. opa-policies/)
-        Type: String
-        Default: opa-policies/
-    OpaPolicyS3Key:
-        Description: S3 Key for OPA policy
-        Type: String
-        Default: opa_policy_s3_logging.rego
-    OpaPolicyPackageName:
-        Description: The package name from your OPA policy written in Rego
-        Type: String
-        Default: s3_bucket_logging
-    OpaPolicyRuleToEval:
-        Description: The rule from your OPA policy which will be evaluated
-        Type: String
-        Default: compliant
+  AssetsBucket:
+    Description: S3 bucket name where the OPA policy is stored
+    Type: String
+  ConfigRuleScope:
+    Description: Scope of the Config rule. Comma delimited list of AWS resource types
+    Type: CommaDelimitedList
+    Default: AWS::S3::Bucket
+  OpaPoliciesS3Prefix:
+    Description: S3 key prefix where rego policies are stored. (e.g. opa-policies/)
+    Type: String
+    Default: opa-policies/
+  OpaPolicyS3Key:
+    Description: S3 Key for OPA policy
+    Type: String
+    Default: opa_policy_s3_logging.rego
+  OpaPolicyPackageName:
+    Description: The package name from your OPA policy written in Rego
+    Type: String
+    Default: s3_bucket_logging
+  OpaPolicyRuleToEval:
+    Description: The rule from your OPA policy which will be evaluated
+    Type: String
+    Default: compliant
 
 Resources:
-    OpaConfigRule:
-        Type: AWS::Config::ConfigRule
-        Properties:
-            InputParameters:
-                ASSETS_BUCKET: !Ref AssetsBucket
-                REGO_POLICIES_PREFIX: !Ref OpaPoliciesS3Prefix
-                REGO_POLICY_KEY: !Ref OpaPolicyS3Key
-                OPA_POLICY_PACKAGE_NAME: !Ref OpaPolicyPackageName
-                OPA_POLICY_RULE_TO_EVAL: !Ref OpaPolicyRuleToEval
-            Scope:
-                ComplianceResourceTypes: !Ref ConfigRuleScope
-            Source:
-                Owner: CUSTOM_LAMBDA
-                SourceDetails:
-                    - EventSource: aws.config
-                        MessageType: ConfigurationItemChangeNotification
-                SourceIdentifier: !ImportValue opa-lambda-arn
+  OpaConfigRule:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      InputParameters:
+        ASSETS_BUCKET: !Ref AssetsBucket
+        REGO_POLICIES_PREFIX: !Ref OpaPoliciesS3Prefix
+        REGO_POLICY_KEY: !Ref OpaPolicyS3Key
+        OPA_POLICY_PACKAGE_NAME: !Ref OpaPolicyPackageName
+        OPA_POLICY_RULE_TO_EVAL: !Ref OpaPolicyRuleToEval
+      Scope:
+        ComplianceResourceTypes: !Ref ConfigRuleScope
+      Source:
+        Owner: CUSTOM_LAMBDA
+        SourceDetails:
+          - EventSource: aws.config
+            MessageType: ConfigurationItemChangeNotification
+        SourceIdentifier: !ImportValue opa-lambda-arn  # Import the exported ARN value
 
 Outputs:
     ConfigRuleName:
         Description: Name of the Config rule deployed
         Value: !Ref OpaConfigRule
-
