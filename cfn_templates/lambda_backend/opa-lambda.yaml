@@ -110,3 +110,4 @@ Outputs:
     Value: !GetAtt LambdaFunction.Arn
     Export:
       Name: opa-lambda-arn
+      
