@@ -34,9 +34,6 @@ Resources:
   LambdaRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: opa-lambda # Replace with the name of your existing IAM role
-      ManagedPolicyArns:
-        - arn:aws:iam::976878385886:role/opa-lambda
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -113,6 +110,5 @@ Outputs:
     Value: !GetAtt LambdaFunction.Arn
     Export:
       Name: opa-lambda-arn
-
       
       
